@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # DialogueAI Activity Module for Moodle
 
 An AI-powered dialogue activity module that enables interactive conversations between students and AI bots using OpenAI's API, with customizable documentation and system prompts.
@@ -82,3 +83,6 @@ This DialogueAI module is built following Moodle coding guidelines and includes:
 - Advanced prompt templates
 - Integration with Moodle gradebook
 
+=======
+# dialogue-ai
+>>>>>>> cb0344e34908fcf8e3077bd81c1afbba8c0f3e05
