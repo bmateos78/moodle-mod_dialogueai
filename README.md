@@ -81,3 +81,4 @@ This DialogueAI module is built following Moodle coding guidelines and includes:
 - Multiple AI model support
 - Advanced prompt templates
 - Integration with Moodle gradebook
+
