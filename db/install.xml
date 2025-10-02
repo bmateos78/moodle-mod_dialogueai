@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="mod/dialogueai/db" VERSION="2024092601" COMMENT="XMLDB file for DialogueAI activity">
+  <TABLES>
+    <TABLE NAME="dialogueai" COMMENT="Stores DialogueAI activity instances">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true"/>
+        <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" DEFAULT="0"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" DEFAULT=""/>
+        <FIELD NAME="botname" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" DEFAULT=""/>
+        <FIELD NAME="studentname" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" DEFAULT=""/>
+        <FIELD NAME="welcomemessage" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Welcome message from bot"/>
+        <FIELD NAME="difficulty" TYPE="int" LENGTH="1" NOTNULL="true" UNSIGNED="true" DEFAULT="3" SEQUENCE="false" COMMENT="Question difficulty level 1-5"/>
+        <FIELD NAME="numquestions" TYPE="int" LENGTH="2" NOTNULL="true" UNSIGNED="true" DEFAULT="5" SEQUENCE="false" COMMENT="Number of questions before conversation ends"/>
+        <FIELD NAME="documentation" TYPE="int" LENGTH="10" NOTNULL="false" UNSIGNED="true" SEQUENCE="false" DEFAULT="0"/>
+        <FIELD NAME="systemprompt" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="openaiapi" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" DEFAULT=""/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="dialogueai_conversations" COMMENT="Stores conversation messages for DialogueAI activities">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true"/>
+        <FIELD NAME="dialogueaiid" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false"/>
+        <FIELD NAME="conversationid" TYPE="char" LENGTH="40" NOTNULL="true" SEQUENCE="false" COMMENT="Unique conversation session identifier"/>
+        <FIELD NAME="role" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="user, assistant, or system"/>
+        <FIELD NAME="message" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="dialogueaiid" TYPE="foreign" FIELDS="dialogueaiid" REFTABLE="dialogueai" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="dialogueai_user_conversation" UNIQUE="false" FIELDS="dialogueaiid, userid, conversationid"/>
+        <INDEX NAME="conversation_time" UNIQUE="false" FIELDS="conversationid, timecreated"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>
