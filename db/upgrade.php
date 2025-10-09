@@ -131,5 +131,31 @@ function xmldb_dialogueai_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2024093002, 'dialogueai');
     }
     
+    // Add completion conversation field
+    if ($oldversion < 2024100602) {
+        $table = new xmldb_table('dialogueai');
+        
+        // Add completionconversation field
+        $field = new xmldb_field('completionconversation', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'numquestions');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        
+        upgrade_mod_savepoint(true, 2024100602, 'dialogueai');
+    }
+    
+    // Add OpenAI model selection field
+    if ($oldversion < 2024100901) {
+        $table = new xmldb_table('dialogueai');
+        
+        // Add openaimodel field
+        $field = new xmldb_field('openaimodel', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, 'gpt-3.5-turbo', 'completionconversation');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        
+        upgrade_mod_savepoint(true, 2024100901, 'dialogueai');
+    }
+    
     return true;
 }

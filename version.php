@@ -17,7 +17,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_dialogueai';
-$plugin->version = 2024093002;  // Added difficulty and question count settings with parameter substitution
+$plugin->version = 2024100901;  // Added OpenAI model selection with dynamic character limits (GPT-3.5-turbo: 50K, GPT-4-turbo/4o: 475K)
 $plugin->requires = 2022112800; // Moodle 5.0.0
 $plugin->maturity = MATURITY_STABLE;
 $plugin->release = '1.0.0';     // DialogueAI release

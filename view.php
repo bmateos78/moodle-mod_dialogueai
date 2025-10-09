@@ -100,6 +100,12 @@ echo html_writer::tag('button', 'Send', array(
     'id' => 'send-button',
     'class' => 'btn btn-primary'
 ));
+echo html_writer::tag('button', get_string('restartconversation', 'dialogueai'), array(
+    'type' => 'button',
+    'id' => 'restart-button',
+    'class' => 'btn btn-secondary ml-2',
+    'title' => get_string('restartconversation_help', 'dialogueai')
+));
 echo html_writer::end_div();
 echo html_writer::end_tag('form');
 echo html_writer::end_div();
@@ -128,17 +134,25 @@ $PAGE->requires->js_init_code('
     let lastRequestTime = 0;
     const minRequestInterval = 2000; // 2 seconds between requests
     
-    function addMessage(content, isBot = false) {
+    function addMessage(content, isBot = false, customName = null) {
         const messageDiv = document.createElement("div");
         messageDiv.className = "chat-message " + (isBot ? "bot-message" : "student-message");
         
         const nameSpan = document.createElement("span");
         nameSpan.className = "message-name";
-        nameSpan.textContent = isBot ? botName : studentName;
+        nameSpan.textContent = customName || (isBot ? botName : studentName);
         
         const contentDiv = document.createElement("div");
         contentDiv.className = "message-content";
-        contentDiv.textContent = content;
+        // Use textContent for safety and add line breaks manually
+        const lines = content.split("\n");
+        for (let i = 0; i < lines.length; i++) {
+            if (i > 0) {
+                contentDiv.appendChild(document.createElement("br"));
+            }
+            const textNode = document.createTextNode(lines[i]);
+            contentDiv.appendChild(textNode);
+        }
         
         messageDiv.appendChild(nameSpan);
         messageDiv.appendChild(contentDiv);
@@ -208,6 +222,13 @@ $PAGE->requires->js_init_code('
                         
                         if (response.success) {
                             addMessage(response.response, true);
+                            
+                            // Check if activity was completed
+                            if (response.completed) {
+                                setTimeout(function() {
+                                    addMessage("🎉 " + "' . get_string('activitycompleted', 'dialogueai') . '", true, "System");
+                                }, 1000);
+                            }
                         } else {
                             // Handle different types of errors with appropriate user feedback
                             let errorMsg = response.error;
@@ -258,6 +279,17 @@ $PAGE->requires->js_init_code('
         }
     });
     
+    // Handle restart conversation button
+    const restartButton = document.getElementById("restart-button");
+    if (restartButton) {
+        restartButton.addEventListener("click", function(e) {
+            e.preventDefault();
+            if (confirm("' . get_string('confirmrestart', 'dialogueai') . '")) {
+                restartConversation();
+            }
+        });
+    }
+    
     // Initialize conversation on page load
     function initializeConversation() {
         const xhr = new XMLHttpRequest();
@@ -281,6 +313,44 @@ $PAGE->requires->js_init_code('
         };
         
         const params = "action=init_conversation&cmid=" + cmId + "&sesskey=' . sesskey() . '";
+        xhr.send(params);
+    }
+    
+    // Restart conversation function
+    function restartConversation() {
+        const xhr = new XMLHttpRequest();
+        const ajaxUrl = "' . $CFG->wwwroot . '/mod/dialogueai/ajax.php";
+        
+        xhr.open("POST", ajaxUrl, true);
+        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.success) {
+                        // Clear chat messages
+                        chatMessages.innerHTML = "";
+                        
+                        // Show welcome message if available
+                        if (response.welcomemessage) {
+                            addMessage(response.welcomemessage, true, "' . $botname . '");
+                        }
+                        
+                        // Clear input
+                        chatInput.value = "";
+                        chatInput.focus();
+                    } else {
+                        alert("Error restarting conversation: " + (response.error || "Unknown error"));
+                    }
+                } catch (e) {
+                    console.error("Error parsing restart response:", e);
+                    alert("Error restarting conversation");
+                }
+            }
+        };
+        
+        const params = "action=restart_conversation&cmid=" + cmId + "&sesskey=' . sesskey() . '";
         xhr.send(params);
     }
     
@@ -394,6 +464,11 @@ echo '<style>
         border-radius: 18px;
         word-wrap: break-word;
         line-height: 1.4;
+        white-space: pre-wrap; /* Preserve whitespace and line breaks */
+    }
+    
+    .message-content br {
+        line-height: 1.6; /* Ensure proper spacing for line breaks */
     }
     
     .student-message .message-content {

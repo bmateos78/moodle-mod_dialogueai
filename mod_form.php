@@ -91,10 +91,58 @@ class mod_dialogueai_mod_form extends moodleform_mod {
         $mform->setDefault('numquestions', 5);
         $mform->addHelpButton('numquestions', 'numquestions', 'dialogueai');
 
+        // OpenAI Model selection dropdown
+        $model_options = array(
+            'gpt-3.5-turbo' => get_string('model_gpt35turbo', 'dialogueai'),
+            'gpt-4-turbo' => get_string('model_gpt4turbo', 'dialogueai'),
+            'gpt-4o' => get_string('model_gpt4o', 'dialogueai')
+        );
+        $mform->addElement('select', 'openaimodel', get_string('openaimodel', 'dialogueai'), $model_options);
+        $mform->setDefault('openaimodel', 'gpt-3.5-turbo');
+        $mform->addHelpButton('openaimodel', 'openaimodel', 'dialogueai');
+
         // Documentation upload field
         $mform->addElement('filemanager', 'documentation', get_string('documentation', 'dialogueai'), null,
             array('subdirs' => 0, 'maxbytes' => 0, 'maxfiles' => 10, 'accepted_types' => array('.pdf', '.txt', '.doc', '.docx')));
         $mform->addHelpButton('documentation', 'documentation', 'dialogueai');
+        
+        // Add character limit information (will be updated by JavaScript)
+        $mform->addElement('static', 'documentation_limit_info', '', 
+            '<div id="documentation-limit-info" class="alert alert-info"><strong>' . get_string('documentationlimitinfo_dynamic', 'dialogueai') . '</strong></div>');
+        
+        // Add JavaScript to update character limit info based on model selection
+        $mform->addElement('html', '<script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var modelSelect = document.getElementById("id_openaimodel");
+            var limitInfo = document.getElementById("documentation-limit-info");
+            
+            function updateLimitInfo() {
+                var selectedModel = modelSelect.value;
+                var limitText = "";
+                
+                switch(selectedModel) {
+                    case "gpt-3.5-turbo":
+                        limitText = "Character Limit: Maximum 50,000 characters total across all text files (.txt). Only text files are processed for AI context.";
+                        break;
+                    case "gpt-4-turbo":
+                    case "gpt-4o":
+                        limitText = "Character Limit: Maximum 475,000 characters total across all text files (.txt). Only text files are processed for AI context.";
+                        break;
+                    default:
+                        limitText = "Character Limit: Maximum 50,000 characters total across all text files (.txt). Only text files are processed for AI context.";
+                }
+                
+                if (limitInfo) {
+                    limitInfo.innerHTML = "<strong>" + limitText + "</strong>";
+                }
+            }
+            
+            if (modelSelect && limitInfo) {
+                modelSelect.addEventListener("change", updateLimitInfo);
+                updateLimitInfo(); // Set initial value
+            }
+        });
+        </script>');
 
         // System Prompt field
         $mform->addElement('textarea', 'systemprompt', get_string('systemprompt', 'dialogueai'), 
@@ -107,6 +155,9 @@ class mod_dialogueai_mod_form extends moodleform_mod {
         $mform->setType('openaiapi', PARAM_TEXT);
         $mform->addHelpButton('openaiapi', 'openaiapi', 'dialogueai');
 
+        // Add completion elements
+        $this->add_completion_rules();
+        
         // Add standard elements.
         $this->standard_coursemodule_elements();
 
@@ -135,7 +186,15 @@ class mod_dialogueai_mod_form extends moodleform_mod {
      * @return array Array of string IDs of added items, empty array if none
      */
     public function add_completion_rules() {
-        return [];
+        $mform =& $this->_form;
+        
+        $group = array();
+        $group[] = $mform->createElement('checkbox', 'completionconversation', '', get_string('completionconversation', 'dialogueai'));
+        $mform->addGroup($group, 'completionconversationgroup', get_string('completionconversationgroup', 'dialogueai'), array(' '), false);
+        $mform->addHelpButton('completionconversationgroup', 'completionconversationgroup', 'dialogueai');
+        $mform->disabledIf('completionconversationgroup', 'completion', 'eq', COMPLETION_TRACKING_NONE);
+        
+        return array('completionconversationgroup');
     }
 
     /**
@@ -145,7 +204,7 @@ class mod_dialogueai_mod_form extends moodleform_mod {
      * @return bool True if completion is enabled
      */
     public function completion_rule_enabled($data) {
-        return false;
+        return !empty($data['completionconversation']);
     }
 
     /**
@@ -153,5 +212,56 @@ class mod_dialogueai_mod_form extends moodleform_mod {
      */
     public function definition_after_data() {
         // Intentionally empty to avoid PEAR library calls
+    }
+    
+    /**
+     * Validates the form data
+     *
+     * @param array $data array of ("fieldname"=>value) of submitted data
+     * @param array $files array of uploaded files "element_name"=>tmp_file_path
+     * @return array of "element_name"=>"error_description" if there are errors,
+     *         or an empty array if everything is OK (true allowed for backwards compatibility too).
+     */
+    public function validation($data, $files) {
+        $errors = parent::validation($data, $files);
+        
+        // Validate documentation character count if files are uploaded
+        if (!empty($data['documentation'])) {
+            // Get the draft area files
+            $draftitemid = $data['documentation'];
+            $usercontext = context_user::instance($GLOBALS['USER']->id);
+            $fs = get_file_storage();
+            $draftfiles = $fs->get_area_files($usercontext->id, 'user', 'draft', $draftitemid, 'filename', false);
+            
+            $total_chars = 0;
+            $selected_model = isset($data['openaimodel']) ? $data['openaimodel'] : 'gpt-3.5-turbo';
+            // Get character limit based on selected model
+            switch ($selected_model) {
+                case 'gpt-3.5-turbo':
+                    $max_chars = 50000;
+                    break;
+                case 'gpt-4-turbo':
+                case 'gpt-4o':
+                    $max_chars = 475000;
+                    break;
+                default:
+                    $max_chars = 50000;
+            }
+            
+            foreach ($draftfiles as $file) {
+                if ($file->get_mimetype() === 'text/plain') {
+                    $total_chars += strlen($file->get_content());
+                }
+            }
+            
+            if ($total_chars > $max_chars) {
+                $errors['documentation'] = get_string('documentationtolong', 'dialogueai', [
+                    'current' => number_format($total_chars),
+                    'max' => number_format($max_chars)
+                ]);
+            }
+        }
+        
+        return $errors;
     }
 }

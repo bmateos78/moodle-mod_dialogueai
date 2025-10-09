@@ -11,6 +11,8 @@
         <FIELD NAME="welcomemessage" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Welcome message from bot"/>
         <FIELD NAME="difficulty" TYPE="int" LENGTH="1" NOTNULL="true" UNSIGNED="true" DEFAULT="3" SEQUENCE="false" COMMENT="Question difficulty level 1-5"/>
         <FIELD NAME="numquestions" TYPE="int" LENGTH="2" NOTNULL="true" UNSIGNED="true" DEFAULT="5" SEQUENCE="false" COMMENT="Number of questions before conversation ends"/>
+        <FIELD NAME="completionconversation" TYPE="int" LENGTH="1" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" COMMENT="Require conversation completion for activity completion"/>
+        <FIELD NAME="openaimodel" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" DEFAULT="gpt-3.5-turbo" COMMENT="OpenAI model to use for conversations"/>
         <FIELD NAME="documentation" TYPE="int" LENGTH="10" NOTNULL="false" UNSIGNED="true" SEQUENCE="false" DEFAULT="0"/>
         <FIELD NAME="systemprompt" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="openaiapi" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" DEFAULT=""/>

@@ -92,11 +92,24 @@ switch ($action) {
             // Store AI response in conversation history
             dialogueai_store_conversation_message($dialogueai->id, $USER->id, $conversationid, 'assistant', $response);
             
+            // Check if this is the completion moment (exactly reached target questions)
+            $is_completion_moment = false;
+            $is_complete = false;
+            
+            // Only check completion if the activity has completion enabled
+            if ($dialogueai->completionconversation) {
+                $is_completion_moment = dialogueai_is_completion_moment($dialogueai->id, $USER->id, $conversationid);
+                if ($is_completion_moment) {
+                    $is_complete = dialogueai_mark_activity_complete($cm->id, $USER->id);
+                }
+            }
+            
             echo json_encode([
                 'success' => true,
                 'response' => $response,
                 'botname' => $dialogueai->botname ?: 'AI Assistant',
-                'studentname' => $dialogueai->studentname ?: 'Student'
+                'studentname' => $dialogueai->studentname ?: 'Student',
+                'completed' => $is_complete
             ]);
         } catch (Exception $e) {
             error_log('AJAX Error: ' . $e->getMessage());
@@ -174,11 +187,41 @@ switch ($action) {
         ]);
         break;
         
+    case 'restart_conversation':
+        try {
+            // Get current conversation ID
+            $current_conversationid = dialogueai_get_current_conversation($dialogueai->id, $USER->id);
+            
+            // Delete existing conversation messages
+            dialogueai_clear_conversation_history($current_conversationid);
+            
+            // Generate new conversation ID
+            $new_conversationid = dialogueai_start_new_conversation($dialogueai->id, $USER->id);
+            
+            // Store welcome message if available
+            if (!empty($dialogueai->welcomemessage)) {
+                dialogueai_store_conversation_message($dialogueai->id, $USER->id, $new_conversationid, 'assistant', $dialogueai->welcomemessage);
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'conversationid' => $new_conversationid,
+                'welcomemessage' => $dialogueai->welcomemessage ?: '',
+                'message' => 'Conversation restarted successfully'
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
+        }
+        break;
+        
     default:
         echo json_encode([
             'success' => false,
             'error' => 'Invalid action: "' . $action . '" (length: ' . strlen($action) . ')',
-            'available_actions' => ['send_message', 'sendmessage', 'load_history', 'init_conversation', 'test']
+            'available_actions' => ['send_message', 'sendmessage', 'load_history', 'init_conversation', 'restart_conversation', 'test']
         ]);
         break;
 }
@@ -331,7 +374,7 @@ function dialogueai_send_to_openai($dialogueai, $message, $conversationid) {
     
     // Prepare API request
     $data = [
-        'model' => 'gpt-3.5-turbo',
+        'model' => $dialogueai->openaimodel ?: 'gpt-3.5-turbo',
         'messages' => $messages,
         'max_tokens' => 500,
         'temperature' => 0.7
@@ -479,12 +522,77 @@ function dialogueai_get_documentation_context($dialogueai) {
     $files = $fs->get_area_files($context->id, 'mod_dialogueai', 'documentation', 0, 'filename', false);
     
     $content = '';
+    $total_chars = 0;
+    $max_chars = dialogueai_get_model_char_limit($dialogueai->openaimodel ?: 'gpt-3.5-turbo');
+    
     foreach ($files as $file) {
         if ($file->get_mimetype() === 'text/plain') {
+            $file_content = $file->get_content();
+            $file_chars = strlen($file_content);
+            
+            // Check if adding this file would exceed the limit
+            if ($total_chars + $file_chars > $max_chars) {
+                // Log warning but continue with truncated content
+                error_log('DialogueAI: Documentation exceeds ' . number_format($max_chars) . ' character limit. Total: ' . ($total_chars + $file_chars) . ' chars');
+                
+                // Add as much as we can from this file
+                $remaining_chars = $max_chars - $total_chars;
+                if ($remaining_chars > 0) {
+                    $content .= "\n\nFile: " . $file->get_filename() . " (truncated)\n";
+                    $content .= substr($file_content, 0, $remaining_chars);
+                }
+                break; // Stop processing more files
+            }
+            
             $content .= "\n\nFile: " . $file->get_filename() . "\n";
-            $content .= $file->get_content();
+            $content .= $file_content;
+            $total_chars += $file_chars;
         }
     }
     
     return $content;
+}
+
+/**
+ * Validate documentation character count
+ *
+ * @param int $contextid The context ID
+ * @return array Array with 'valid' boolean and 'char_count' integer
+ */
+function dialogueai_validate_documentation_length($contextid, $model = 'gpt-3.5-turbo') {
+    $fs = get_file_storage();
+    $files = $fs->get_area_files($contextid, 'mod_dialogueai', 'documentation', 0, 'filename', false);
+    
+    $total_chars = 0;
+    $max_chars = dialogueai_get_model_char_limit($model);
+    
+    foreach ($files as $file) {
+        if ($file->get_mimetype() === 'text/plain') {
+            $total_chars += strlen($file->get_content());
+        }
+    }
+    
+    return [
+        'valid' => $total_chars <= $max_chars,
+        'char_count' => $total_chars,
+        'max_chars' => $max_chars
+    ];
+}
+
+/**
+ * Get character limit based on OpenAI model
+ *
+ * @param string $model The OpenAI model name
+ * @return int Character limit for the model
+ */
+function dialogueai_get_model_char_limit($model) {
+    switch ($model) {
+        case 'gpt-3.5-turbo':
+            return 50000;
+        case 'gpt-4-turbo':
+        case 'gpt-4o':
+            return 475000;
+        default:
+            return 50000; // Default to most restrictive
+    }
 }

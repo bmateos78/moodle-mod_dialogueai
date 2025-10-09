@@ -43,8 +43,13 @@ $string['difficulty_4'] = '4 - Difficult';
 $string['difficulty_5'] = '5 - Very Difficult';
 $string['numquestions'] = 'Number of Questions';
 $string['numquestions_help'] = 'Select how many questions the assistant will ask before considering the conversation finished';
+$string['openaimodel'] = 'OpenAI Model';
+$string['openaimodel_help'] = 'Select which OpenAI model to use for conversations. Different models have different capabilities and character limits.';
+$string['model_gpt35turbo'] = 'GPT-3.5 Turbo (Fast, 50K chars max)';
+$string['model_gpt4turbo'] = 'GPT-4 Turbo (Advanced, 475K chars max)';
+$string['model_gpt4o'] = 'GPT-4o (Advanced & Efficient, 475K chars max)';
 $string['documentation'] = 'Documentation';
-$string['documentation_help'] = 'Upload documentation files that the AI will use for dialogue';
+$string['documentation_help'] = 'Upload documentation files that the AI will use for dialogue. Character limit depends on selected OpenAI model.';
 $string['systemprompt'] = 'System Prompt';
 $string['systemprompt_help'] = 'Enter the system prompt that will guide the AI\'s behavior and responses';
 $string['openaiapi'] = 'OpenAI API Key';
@@ -60,6 +65,16 @@ $string['dialogueai:view'] = 'View DialogueAI activity';
 // Activity interface
 $string['startdialogue'] = 'Start Dialogue';
 $string['dialoguemessage'] = 'Ready to start your AI-powered dialogue!';
+$string['restartconversation'] = 'Restart Conversation';
+$string['restartconversation_help'] = 'Delete current conversation and start fresh with welcome message';
+$string['confirmrestart'] = 'Are you sure you want to restart the conversation? This will delete all current messages.';
+$string['activitycompleted'] = 'Congratulations! You have completed this dialogue activity. Your progress has been recorded.';
+$string['completionconversation'] = 'Student must complete the conversation';
+$string['completionconversationgroup'] = 'Require conversation completion';
+$string['completionconversationgroup_help'] = 'If enabled, the activity will be marked as complete when the student completes the required number of questions in the conversation.';
+$string['documentationtolong'] = 'The uploaded documentation is too long. Current: {$a->current} characters, Maximum allowed: {$a->max} characters. Please reduce the content or split into multiple activities.';
+$string['documentationlimitinfo'] = 'Character Limit: Maximum 50,000 characters total across all text files (.txt). Only text files are processed for AI context.';
+$string['documentationlimitinfo_dynamic'] = 'Character Limit: Depends on selected OpenAI model. Only text files (.txt) are processed for AI context.';
 
 // Admin settings
 $string['defaultbotname'] = 'Default Bot Name';

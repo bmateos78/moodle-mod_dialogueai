@@ -27,7 +27,8 @@ function dialogueai_supports($feature) {
         case FEATURE_GROUPS:                  return false;
         case FEATURE_GROUPINGS:               return false;
         case FEATURE_MOD_INTRO:               return false;
-        case FEATURE_COMPLETION_TRACKS_VIEWS: return true;
+        case FEATURE_COMPLETION_TRACKS_VIEWS: return false;
+        case FEATURE_COMPLETION_HAS_RULES:    return true;
         case FEATURE_GRADE_HAS_GRADE:         return false;
         case FEATURE_GRADE_OUTCOMES:          return false;
         case FEATURE_BACKUP_MOODLE2:          return true;
@@ -311,4 +312,141 @@ function dialogueai_format_conversation_for_api($history) {
     }
     
     return $messages;
+}
+
+/**
+ * Check if conversation should be marked as complete
+ *
+ * @param int $dialogueaiid The dialogueai instance ID
+ * @param int $userid The user ID
+ * @param string $conversationid The conversation ID
+ * @return bool True if conversation should be completed
+ */
+function dialogueai_should_complete_conversation($dialogueaiid, $userid, $conversationid) {
+    global $DB;
+    
+    // Get the dialogueai instance to check number of questions setting
+    $dialogueai = $DB->get_record('dialogueai', array('id' => $dialogueaiid));
+    if (!$dialogueai) {
+        return false;
+    }
+    
+    // Count bot messages (questions) in this conversation
+    $bot_message_count = $DB->count_records('dialogueai_conversations', array(
+        'conversationid' => $conversationid,
+        'role' => 'assistant'
+    ));
+    
+    // Complete if we've reached the target number of questions (adjusted by +2 for timing)
+    return $bot_message_count >= ($dialogueai->numquestions + 2);
+}
+
+/**
+ * Check if this is the exact moment when conversation should be completed
+ * (i.e., we just reached the target number of questions)
+ *
+ * @param int $dialogueaiid The dialogueai instance ID
+ * @param int $userid The user ID
+ * @param string $conversationid The conversation ID
+ * @return bool True if this is the completion moment
+ */
+function dialogueai_is_completion_moment($dialogueaiid, $userid, $conversationid) {
+    global $DB;
+    
+    // Get the dialogueai instance to check number of questions setting
+    $dialogueai = $DB->get_record('dialogueai', array('id' => $dialogueaiid));
+    if (!$dialogueai) {
+        return false;
+    }
+    
+    // Count bot messages (questions) in this conversation
+    $bot_message_count = $DB->count_records('dialogueai_conversations', array(
+        'conversationid' => $conversationid,
+        'role' => 'assistant'
+    ));
+    
+    // Return true only if we exactly reached the target (adjusted by +2 for timing)
+    return $bot_message_count == ($dialogueai->numquestions + 2);
+}
+
+/**
+ * Mark activity as complete for a user
+ *
+ * @param int $cmid The course module ID
+ * @param int $userid The user ID
+ * @return bool True if completion was marked successfully
+ */
+function dialogueai_mark_activity_complete($cmid, $userid) {
+    global $CFG;
+    
+    // Check if completion is enabled
+    if (!$CFG->enablecompletion) {
+        return false;
+    }
+    
+    require_once($CFG->libdir . '/completionlib.php');
+    
+    $course = get_course_by_courseid_from_cmid($cmid);
+    $cm = get_coursemodule_from_id('dialogueai', $cmid);
+    
+    if (!$course || !$cm) {
+        return false;
+    }
+    
+    $completion = new completion_info($course);
+    
+    if ($completion->is_enabled($cm)) {
+        $completion->update_state($cm, COMPLETION_COMPLETE, $userid);
+        return true;
+    }
+    
+    return false;
+}
+
+/**
+ * Helper function to get course from course module ID
+ *
+ * @param int $cmid The course module ID
+ * @return object|false Course object or false
+ */
+function get_course_by_courseid_from_cmid($cmid) {
+    global $DB;
+    
+    $cm = $DB->get_record('course_modules', array('id' => $cmid));
+    if (!$cm) {
+        return false;
+    }
+    
+    return $DB->get_record('course', array('id' => $cm->course));
+}
+
+/**
+ * Obtains the automatic completion state for this dialogueai based on any conditions
+ * in dialogueai settings.
+ *
+ * @param object $course Course
+ * @param object $cm Course-module
+ * @param int $userid User ID
+ * @param bool $type Type of comparison (or/and; can be used as return value if no conditions)
+ * @return bool True if completed, false if not, $type if conditions not set.
+ */
+function dialogueai_get_completion_state($course, $cm, $userid, $type) {
+    global $DB;
+
+    // Get dialogueai details
+    $dialogueai = $DB->get_record('dialogueai', array('id' => $cm->instance), '*', MUST_EXIST);
+
+    // If completion isn't enabled for this activity, or there's no custom completion criteria
+    if (!$dialogueai->completionconversation || !$dialogueai->numquestions) {
+        return $type;
+    }
+
+    // Get current conversation for this user
+    $conversationid = dialogueai_get_current_conversation($dialogueai->id, $userid);
+    if (!$conversationid) {
+        return false;
+    }
+
+    // Check if user has completed the required number of questions
+    return dialogueai_should_complete_conversation($dialogueai->id, $userid, $conversationid);
 }
