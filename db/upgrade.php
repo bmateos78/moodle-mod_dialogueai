@@ -157,5 +157,18 @@ function xmldb_dialogueai_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2024100901, 'dialogueai');
     }
     
+    // Remove systemprompt field for production version
+    if ($oldversion < 2024101001) {
+        $table = new xmldb_table('dialogueai');
+        
+        // Drop systemprompt field if it exists
+        $field = new xmldb_field('systemprompt');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+        
+        upgrade_mod_savepoint(true, 2024101001, 'dialogueai');
+    }
+    
     return true;
 }

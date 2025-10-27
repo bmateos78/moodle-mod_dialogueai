@@ -17,7 +17,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_dialogueai';
-$plugin->version = 2024100901;  // Added OpenAI model selection with dynamic character limits (GPT-3.5-turbo: 50K, GPT-4-turbo/4o: 475K)
+$plugin->version = 2024101001;  // Production release: Hardcoded educational evaluation system prompt, removed configurable system prompt
 $plugin->requires = 2022112800; // Moodle 5.0.0
 $plugin->maturity = MATURITY_STABLE;
 $plugin->release = '1.0.0';     // DialogueAI release

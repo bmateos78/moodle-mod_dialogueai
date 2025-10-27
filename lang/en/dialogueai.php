@@ -50,8 +50,6 @@ $string['model_gpt4turbo'] = 'GPT-4 Turbo (Advanced, 475K chars max)';
 $string['model_gpt4o'] = 'GPT-4o (Advanced & Efficient, 475K chars max)';
 $string['documentation'] = 'Documentation';
 $string['documentation_help'] = 'Upload documentation files that the AI will use for dialogue. Character limit depends on selected OpenAI model.';
-$string['systemprompt'] = 'System Prompt';
-$string['systemprompt_help'] = 'Enter the system prompt that will guide the AI\'s behavior and responses';
 $string['openaiapi'] = 'OpenAI API Key';
 $string['openaiapi_help'] = 'Enter your OpenAI API key for AI functionality';
 

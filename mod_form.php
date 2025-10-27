@@ -144,12 +144,6 @@ class mod_dialogueai_mod_form extends moodleform_mod {
         });
         </script>');
 
-        // System Prompt field
-        $mform->addElement('textarea', 'systemprompt', get_string('systemprompt', 'dialogueai'), 
-            array('rows' => 10, 'cols' => 80));
-        $mform->setType('systemprompt', PARAM_TEXT);
-        $mform->addHelpButton('systemprompt', 'systemprompt', 'dialogueai');
-
         // OpenAI API Key field
         $mform->addElement('passwordunmask', 'openaiapi', get_string('openaiapi', 'dialogueai'), array('size' => '64'));
         $mform->setType('openaiapi', PARAM_TEXT);

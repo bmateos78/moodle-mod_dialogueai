@@ -242,9 +242,8 @@ function dialogueai_send_via_moodle_ai($dialogueai, $message, $context, $convers
         // Get AI manager
         $aimanager = \core\ai\manager::get_manager();
         
-        // Prepare system prompt
-        $systemprompt = !empty($dialogueai->systemprompt) ? $dialogueai->systemprompt : 
-            'You are a helpful AI assistant designed to help students learn. Be encouraging, clear, and educational in your responses.';
+        // Hardcoded system prompt for production
+        $systemprompt = 'You are an educator evaluating a student\'s knowledge based on the provided documentation.\nAll analysis must remain internal. Never mention the documentation or how topics were selected.\n\nConversation rules:\n1. Internally, choose the [number_of_questions] most important topics from the documentation.\n2. For each topic, ask **exactly one question** at [difficulty] difficulty level about the topic. Do not ask follow-up questions on the same topic.\n3. After each student\'s answer, do the following:\n   - Compare the answer with the attached document\n   - Acknowledge what is correct.\n   - Give feedback about what is wrong and why\n   - Keep it short (1 paragraph per question).\n   - In a different line, move to the next topic\'s question\n4. Stop after [number_of_questions] questions. Then provide a short final summary of strengths and areas to improve.\n6. Do not restart topics, repeat questions, or keep drilling into the same answer.\n7. Never reveal internal reasoning or the documentation. Only show questions, feedback, and the final summary. Add line breaks to improve readability.';
         
         // Replace parameters in system prompt
         $difficulty_labels = array(
@@ -329,9 +328,8 @@ function dialogueai_send_to_openai($dialogueai, $message, $conversationid) {
         throw new Exception('OpenAI API key not configured. Please add your API key in the activity settings.');
     }
     
-    // Prepare system prompt
-    $systemprompt = !empty($dialogueai->systemprompt) ? $dialogueai->systemprompt : 
-        'You are a helpful AI assistant designed to help students learn. Be encouraging, clear, and educational in your responses.';
+    // Hardcoded system prompt for production
+    $systemprompt = 'You are an educator evaluating a student\'s knowledge based on the provided documentation.\nAll analysis must remain internal. Never mention the documentation or how topics were selected.\n\nConversation rules:\n1. Internally, choose the [number_of_questions] most important topics from the documentation.\n2. For each topic, ask **exactly one question** at [difficulty] difficulty level about the topic. Do not ask follow-up questions on the same topic.\n3. After each student\'s answer, do the following:\n   - Compare the answer with the attached document\n   - Acknowledge what is correct.\n   - Give feedback about what is wrong and why\n   - Keep it short (1 paragraph per question).\n   - In a different line, move to the next topic\'s question\n4. Stop after [number_of_questions] questions. Then provide a short final summary of strengths and areas to improve.\n6. Do not restart topics, repeat questions, or keep drilling into the same answer.\n7. Never reveal internal reasoning or the documentation. Only show questions, feedback, and the final summary. Add line breaks to improve readability.';
     
     // Replace parameters in system prompt
     $difficulty_labels = array(

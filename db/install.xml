@@ -14,7 +14,6 @@
         <FIELD NAME="completionconversation" TYPE="int" LENGTH="1" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" COMMENT="Require conversation completion for activity completion"/>
         <FIELD NAME="openaimodel" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" DEFAULT="gpt-3.5-turbo" COMMENT="OpenAI model to use for conversations"/>
         <FIELD NAME="documentation" TYPE="int" LENGTH="10" NOTNULL="false" UNSIGNED="true" SEQUENCE="false" DEFAULT="0"/>
-        <FIELD NAME="systemprompt" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="openaiapi" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" DEFAULT=""/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" DEFAULT="0"/>
